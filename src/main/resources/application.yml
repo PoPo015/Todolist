@@ -13,3 +13,7 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+
+jwt:
+  expiration_time: 86400000 #1일
+  secret: ${JWT_SECRET_KEY}
