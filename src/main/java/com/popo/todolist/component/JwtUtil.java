@@ -1,7 +1,7 @@
 package com.popo.todolist.component;
 
 import com.popo.todolist.entity.UserEntity;
-import com.popo.todolist.model.response.TokenResDto;
+import com.popo.todolist.model.response.TokenResponseDto;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -36,11 +36,11 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public TokenResDto createToken(UserEntity userEntity) {
+    public TokenResponseDto createToken(UserEntity userEntity) {
         return createJwtString(userEntity.getId(), userEntity.getNickName(), userEntity.getEmail());
     }
 
-    private TokenResDto createJwtString(Long id, String nickName, String email) {
+    private TokenResponseDto createJwtString(Long id, String nickName, String email) {
         Claims claims = Jwts.claims();
         claims.put(ID.toString(), id);
         claims.put(NICK_NAME.toString(), nickName);
@@ -50,7 +50,7 @@ public class JwtUtil {
         String accessToken = getToken(claims, now, now.plusSeconds(accessTokenExpTime));
         String refreshToken = getToken(claims, now, now.plusSeconds(refreshTokenExpireTime));
 
-        return new TokenResDto(accessToken, refreshToken);
+        return new TokenResponseDto(accessToken, refreshToken);
     }
 
     public Long extractUserId(String token) {
