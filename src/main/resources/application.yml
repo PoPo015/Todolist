@@ -15,5 +15,6 @@ spring:
         use_sql_comments: true
 
 jwt:
-  expiration_time: 86400000 #1일
+  accessToken_exp_time: 3600 #1시간
+  refreshToken_exp_time: 43200 #12시간
   secret: ${JWT_SECRET_KEY}
