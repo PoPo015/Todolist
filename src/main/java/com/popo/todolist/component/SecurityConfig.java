@@ -21,7 +21,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private static final String[] AUTH_WHITELIST = {
             "/swagger-ui/**", "/swagger-ui-custom.html", "/swagger-ui.html",
-            "/api/auth/signup", "/api/auth/login"
+            "/api/auth/signup", "/api/auth/login", "/api/auth/refresh-token"
     };
 
     @Bean

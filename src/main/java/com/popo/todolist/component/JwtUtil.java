@@ -40,18 +40,35 @@ public class JwtUtil {
         return createJwtString(userEntity.getId(), userEntity.getNickName(), userEntity.getEmail());
     }
 
-    private TokenResponseDto createJwtString(Long id, String nickName, String email) {
-        Claims claims = Jwts.claims();
-        claims.put(ID.toString(), id);
-        claims.put(NICK_NAME.toString(), nickName);
-        claims.put(EMAIL.toString(), email);
+    public TokenResponseDto refreshAccessToken(UserEntity userEntity) {
+        return create(userEntity.getId(), userEntity.getNickName(), userEntity.getEmail());
+    }
 
+    private TokenResponseDto create(Long id, String nickName, String email) {
+        Claims claims = getClaims(id, nickName, email);
+        ZonedDateTime now = ZonedDateTime.now();
+        String accessToken = getToken(claims, now, now.plusSeconds(accessTokenExpTime));
+        return new TokenResponseDto(accessToken);
+    }
+
+
+    private TokenResponseDto createJwtString(Long id, String nickName, String email) {
+        Claims claims = getClaims(id, nickName, email);
         ZonedDateTime now = ZonedDateTime.now();
         String accessToken = getToken(claims, now, now.plusSeconds(accessTokenExpTime));
         String refreshToken = getToken(claims, now, now.plusSeconds(refreshTokenExpireTime));
 
         return new TokenResponseDto(accessToken, refreshToken);
     }
+
+    private Claims getClaims(Long id, String nickName, String email) {
+        Claims claims = Jwts.claims();
+        claims.put(ID.toString(), id);
+        claims.put(NICK_NAME.toString(), nickName);
+        claims.put(EMAIL.toString(), email);
+        return claims;
+    }
+
 
     public Long extractUserId(String token) {
         return extractAllClaims(token).get(ID.toString(), Long.class);
@@ -85,6 +102,7 @@ public class JwtUtil {
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
             log.info("Invalid JWT Token", e);
         } catch (ExpiredJwtException e) {
+            // TODO KST 의도적인 예외 처리 필요
             log.info("Expired JWT Token", e);
         } catch (UnsupportedJwtException e) {
             log.info("Unsupported JWT Token", e);
