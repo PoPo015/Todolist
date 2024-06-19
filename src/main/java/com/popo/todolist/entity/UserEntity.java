@@ -31,6 +31,10 @@ public class UserEntity extends BaseTimeEntity {
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JwtRefreshEntity> jwtRefreshEntityList = new ArrayList<>();
 
+    @BatchSize(size = 1000)
+    @OneToMany(mappedBy = "userEntity",cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TodoEntity> todoEntityList = new ArrayList<>();
+
 
     public UserEntity() {
     }
