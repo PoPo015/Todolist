@@ -32,7 +32,6 @@ public class TodoEntity extends BaseTimeEntity {
     @Column(name = "status", length = 10, nullable = false)
     private TodoStatus todoStatus;
 
-    @LastModifiedBy
     @Column(name = "update_dt", nullable = true)
     private LocalDateTime updateDt;
 
@@ -45,5 +44,16 @@ public class TodoEntity extends BaseTimeEntity {
         this.title = todoCreateRequestDto.getTitle();
         this.description = todoCreateRequestDto.getDescription();
         this.todoStatus = TodoStatus.TODO;
+    }
+
+    public void updateStatus(TodoStatus todoStatus) {
+        this.todoStatus = todoStatus;
+        this.updateDt = LocalDateTime.now();
+    }
+
+    public void updateContent(String title, String description) {
+        this.title = title;
+        this.description = description;
+        this.updateDt = LocalDateTime.now();
     }
 }

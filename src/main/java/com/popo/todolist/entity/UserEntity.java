@@ -27,7 +27,7 @@ public class UserEntity extends BaseTimeEntity {
     private String nickName;
 
 
-    @BatchSize(size = 1000)
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JwtRefreshEntity> jwtRefreshEntityList = new ArrayList<>();
 
