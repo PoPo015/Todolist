@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background: #fff;
+            padding: 20px;
+            margin: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: .5rem;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: .5rem;
+            margin-bottom: .5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: .5rem 1rem;
+            background: #007bff;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+        .tab {
+            flex: 1;
+            padding: .5rem;
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            text-align: center;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+        .todo-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .todo-item {
+            padding: .5rem;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+        .todo-actions {
+            display: flex;
+            gap: .5rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>ToDo Application</h1>
+    <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title">
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description"></textarea>
+    </div>
+    <button id="addTodo">Add ToDo</button>
+    <h2>ToDos</h2>
+    <div class="tabs">
+        <div class="tab active" data-status="TODO">TODO</div>
+        <div class="tab" data-status="IN_PROGRESS">IN PROGRESS</div>
+        <div class="tab" data-status="DONE">DONE</div>
+        <div class="tab" data-status="PENDING">PENDING</div>
+    </div>
+    <ul id="todoList" class="todo-list"></ul>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const accessToken = localStorage.getItem('accessToken');
+    const addTodoButton = document.getElementById('addTodo');
+    const titleInput = document.getElementById('title');
+    const descriptionInput = document.getElementById('description');
+    const todoListElement = document.getElementById('todoList');
+    const tabs = document.querySelectorAll('.tab');
+
+    let currentFilter = 'TODO'; // Default filter
+
+    const fetchTodos = () => {
+        fetch('/api/todo', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const { latest, todoList, inProgressList, pendingList, doneList } = data.result;
+
+            // Clear existing todos
+            todoListElement.innerHTML = '';
+
+            // Display todos based on current filter
+            const categories = {
+                TODO: todoList,
+                IN_PROGRESS: inProgressList,
+                PENDING: pendingList,
+                DONE: doneList
+            };
+
+            categories[currentFilter].forEach(todo => {
+                const todoItem = document.createElement('li');
+                todoItem.className = 'todo-item';
+                todoItem.innerHTML = `
+                    <span>${todo.title}: ${todo.description}</span>
+                    <div class="todo-actions">
+                        ${currentFilter !== 'DONE' ? `
+                            <button onclick="updateTodoStatus(${todo.id}, 'IN_PROGRESS')">In Progress</button>
+                        ` : ''}
+                        <button onclick="updateTodoStatus(${todo.id}, 'DONE')">Done</button>
+                        <button onclick="deleteTodo(${todo.id})">Delete</button>
+                    </div>
+                `;
+                todoListElement.appendChild(todoItem);
+            });
+        })
+        .catch(error => console.error('Error fetching todos:', error));
+    };
+
+    const filterTodos = (status) => {
+        currentFilter = status;
+        fetchTodos(); // Refresh the list with new filter
+    };
+
+    const addTodo = () => {
+        const todoData = {
+            title: titleInput.value,
+            description: descriptionInput.value
+        };
+
+        fetch('/api/todo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(todoData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to add todo');
+            }
+            fetchTodos(); // Refresh the list after adding
+            titleInput.value = '';
+            descriptionInput.value = '';
+        })
+        .catch(error => console.error('Error adding todo:', error));
+    };
+
+    const updateTodoStatus = (todoId, status) => {
+        fetch('/api/todo/status', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ id: todoId, status: status })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to update todo status');
+            }
+            fetchTodos(); // Refresh the list after updating
+        })
+        .catch(error => console.error('Error updating todo status:', error));
+    };
+
+    const deleteTodo = (todoId) => {
+        fetch(`/api/todo/${todoId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to delete todo');
+            }
+            fetchTodos(); // Refresh the list after deleting
+        })
+        .catch(error => console.error('Error deleting todo:', error));
+    };
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const status = tab.getAttribute('data-status');
+            filterTodos(status);
+        });
+    });
+
+    addTodoButton.addEventListener('click', addTodo);
+    fetchTodos(); // Load todos on page load
+
+    window.updateTodoStatus = updateTodoStatus; // Expose functions to global scope
+    window.deleteTodo = deleteTodo;
+});
+</script>
+
+</body>
+</html>

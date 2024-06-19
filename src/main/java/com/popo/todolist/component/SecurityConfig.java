@@ -2,12 +2,14 @@ package com.popo.todolist.component;
 
 import com.popo.todolist.component.security.JwtAuthFilter;
 import lombok.AllArgsConstructor;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -20,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private static final String[] AUTH_WHITELIST = {
+            "/html/**",
             "/swagger-ui/**", "/swagger-ui-custom.html", "/swagger-ui.html",
             "/api/auth/signup", "/api/auth/login", "/api/auth/refresh-token"
     };
@@ -39,6 +42,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(AUTH_WHITELIST).permitAll()
                         .anyRequest().authenticated()
+//                                .anyRequest().permitAll()
                 );
 
         return http.build();

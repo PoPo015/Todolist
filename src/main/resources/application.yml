@@ -18,3 +18,6 @@ jwt:
   accessToken_exp_time: 1800 #30분
   refreshToken_exp_time: 43200 #12시간
   secret: ${JWT_SECRET_KEY}
+
+#server:
+#  port: 17004
