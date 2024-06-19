@@ -10,10 +10,13 @@ import com.popo.todolist.model.request.SignupRequestDto;
 import com.popo.todolist.model.response.TokenResponseDto;
 import com.popo.todolist.repository.JwtRefreshRepository;
 import com.popo.todolist.repository.UserRepository;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -23,36 +26,40 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtRefreshRepository jwtRefreshRepository;
     private final JwtUtil jwtUtil;
+    private final PasswordService passwordService;
+    private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
 
     @Transactional
     public void signup(SignupRequestDto signupRequest) {
-        // TODO KST
-        // dto validation 로직 추가
-        // email/nickname 중복 로직 추가
-        // password 평문 암호화 저장 추가
-        UserEntity userEntity = new UserEntity(signupRequest.getEmail(), signupRequest.getPassword(), signupRequest.getNickName());
+        requestValidate(signupRequest);
+        String encodePassword = passwordService.encodePassword(signupRequest.getPassword());
+        UserEntity userEntity = new UserEntity(signupRequest.getEmail(), encodePassword, signupRequest.getNickName());
         userRepository.save(userEntity);
     }
 
     @Transactional
     public TokenResponseDto login(LoginRequestDto loginRequest) {
-        // TODO KST dto validation 로직 추가
         String requestEmail = loginRequest.getEmail();
+        String requestPassword = loginRequest.getPassword();
+
+        validateEmail(requestEmail);
+        validatePassWord(requestPassword);
+
         UserEntity userEntity = userRepository.findByEmail(requestEmail)
                 .orElseThrow(() -> new RootException(ResultCodeType.SERVER_ERROR_4S000000));
 
-        // TODO KST request들어온 평문 Password와 DB에 암호화 되어있는 패스워드와 비교 검증 필요
+        passwordService.validatePasswordMatch(requestPassword, userEntity.getPassword());
+
         TokenResponseDto token = jwtUtil.createToken(userEntity);
         jwtRefreshRepository.save(new JwtRefreshEntity(userEntity, token.getRefreshToken()));
         return token;
     }
 
-
     @Transactional
     public void withdraw(Long userId, String password) {
         UserEntity userEntity = userRepository.findById(userId).orElseThrow(() -> new RootException(ResultCodeType.SERVER_ERROR_4S000000));
-        // TODO KST
-        // 패스워드 검증 로직 추가 필요
+        passwordService.validatePasswordMatch(password, userEntity.getPassword());
         userRepository.deleteById(userId);
     }
 
@@ -65,20 +72,58 @@ public class AuthService {
                 .findFirst()
                 .orElseThrow(() -> new RootException(ResultCodeType.SERVER_ERROR_4S000000));
 
-        if(!jwtRefreshEntity.getToken().equals(refreshToken)){
+        if (!jwtRefreshEntity.getToken().equals(refreshToken)) {
             throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
         }
 
 
         // TODO KST Batch 혹은 Redis TTL을 통해 refresh token을 주기적으로 지워주는 로직 필요
-
         // 로그인후 ~ 그냥 자연스럽게 끝나면 DB에 남아있는데.. ## 배치나 Redis TTL을 통해 삭제 필요
-        // 탈퇴, 로그아웃 하면 전부삭제
-        // 탈퇴, 로그아웃후 다시 들어오면 ?
-        // 일단 액세스키는 털리는건 어느정도 허용한다..  (ㅈ짧게가져간다)
-        // 액세스키가 만료되면 다시 리프레시에 호출할것이고, 이때 없으니 에러 터짐!
         return jwtUtil.refreshAccessToken(jwtRefreshEntity.getUser());
     }
 
+
+    private void requestValidate(SignupRequestDto signupRequest) {
+        String requestEmail = signupRequest.getEmail();
+        String requestPassword = signupRequest.getPassword();
+        String requestNickName = signupRequest.getNickName();
+
+        validateEmail(requestEmail);
+        validatePassWord(requestPassword);
+        validateNickName(requestNickName);
+
+        userRepository.findByEmail(requestEmail).ifPresent(user -> {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        });
+        userRepository.findByNickName(requestNickName).ifPresent(user -> {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        });
+    }
+
+    private void validateNickName(String requestNickName) {
+        if (StringUtils.isEmpty(requestNickName)) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+    }
+
+    private void validatePassWord(String requestPassword) {
+        if (StringUtils.isEmpty(requestPassword)) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+    }
+
+    private void validateEmail(String requestEmail) {
+        if (StringUtils.isEmpty(requestEmail)) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+
+        if (requestEmail.length() > 100) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+
+        if (!EMAIL_PATTERN.matcher(requestEmail).matches()) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+    }
 
 }
