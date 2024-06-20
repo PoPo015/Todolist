@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원탈퇴</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 400px;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: .5rem;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: .5rem;
+            margin-bottom: .5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: .5rem 1rem;
+            background: #d9534f;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #c9302c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>회원탈퇴</h1>
+    <div class="form-group">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" placeholder="비밀번호를 입력하세요">
+    </div>
+    <button id="withdrawButton">탈퇴</button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const accessToken = localStorage.getItem('accessToken');
+        const withdrawButton = document.getElementById('withdrawButton');
+        const passwordInput = document.getElementById('password');
+
+        const withdraw = () => {
+            const password = passwordInput.value;
+
+            if (!password) {
+                alert('비밀번호를 입력해주세요.');
+                return;
+            }
+
+            fetch('/api/auth/withdraw', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({password: password})
+            })
+                .then(response => {
+                    let ok = response.ok;
+                    console.log("ok!!!!!!= " + ok)
+                    return response.json().then(data => {
+                        if (data.common.code !== "2S000000") {
+                            throw new Error(data.common.msg);
+                        } else {
+                            alert('회원탈퇴가 성공적으로 처리되었습니다.');
+                        }
+                    });
+                    // 선택적으로 사용자를 리디렉션하거나 다른 작업을 수행할 수 있습니다.
+                })
+                .catch(error => {
+                    console.error('회원탈퇴 에러:', error);
+                    alert('회원탈퇴에 실패했습니다. 다시 시도해주세요.');
+                });
+        };
+
+        withdrawButton.addEventListener('click', withdraw);
+    });
+</script>
+
+</body>
+</html>
