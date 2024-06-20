@@ -1,5 +1,6 @@
 package com.popo.todolist.component;
 
+import com.popo.todolist.common.RootException;
 import com.popo.todolist.entity.UserEntity;
 import com.popo.todolist.model.response.TokenResponseDto;
 import io.jsonwebtoken.*;
@@ -15,6 +16,8 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 
 import static com.popo.todolist.common.constants.JwtValueType.*;
+import static com.popo.todolist.common.constants.ResultCodeType.JWT_ERROR_40300000;
+import static com.popo.todolist.common.constants.ResultCodeType.JWT_ERROR_40500000;
 
 @Slf4j
 @Component
@@ -100,10 +103,9 @@ public class JwtUtil {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            log.info("Invalid JWT Token", e);
+            throw new RootException(JWT_ERROR_40300000);
         } catch (ExpiredJwtException e) {
-            // TODO KST 의도적인 예외 처리 필요
-            log.info("Expired JWT Token", e);
+            throw new RootException(JWT_ERROR_40500000);
         } catch (UnsupportedJwtException e) {
             log.info("Unsupported JWT Token", e);
         } catch (IllegalArgumentException e) {
