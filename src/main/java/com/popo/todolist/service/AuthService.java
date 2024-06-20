@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ import java.util.regex.Pattern;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final JwtRefreshService jwtRefreshService;
     private final JwtRefreshRepository jwtRefreshRepository;
     private final JwtUtil jwtUtil;
     private final PasswordService passwordService;
@@ -65,21 +68,26 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public TokenResponseDto refreshToken(String refreshToken) {
-
-        // 제일 마지막으로 등록된것과, refresh로 요청온걸 비교
         JwtRefreshEntity jwtRefreshEntity = jwtRefreshRepository.findByTokenOrderByCreateDtDesc(refreshToken)
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new RootException(ResultCodeType.SERVER_ERROR_4S000000));
+                .orElseThrow(() -> new RootException(ResultCodeType.JWT_ERROR_40100000));
 
         if (!jwtRefreshEntity.getToken().equals(refreshToken)) {
-            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+            throw new RootException(ResultCodeType.JWT_ERROR_40300000);
         }
-
-
-        // TODO KST Batch 혹은 Redis TTL을 통해 refresh token을 주기적으로 지워주는 로직 필요
-        // 로그인후 ~ 그냥 자연스럽게 끝나면 DB에 남아있는데.. ## 배치나 Redis TTL을 통해 삭제 필요
         return jwtUtil.refreshAccessToken(jwtRefreshEntity.getUser());
+    }
+
+    @Transactional(readOnly = true)
+    public void removeRefreshToken() {
+        LocalDateTime cutoffTime = LocalDateTime.now().minusHours(12);
+        List<JwtRefreshEntity> expiredTokenList = jwtRefreshRepository.findByCreateDtBefore(cutoffTime);
+        try {
+            jwtRefreshService.deleteAll(expiredTokenList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
