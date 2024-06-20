@@ -2,6 +2,7 @@ package com.popo.todolist.component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.popo.todolist.config.SecurityConfig;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Component
@@ -40,8 +42,13 @@ public class LoggingFilter extends OncePerRequestFilter {
         responseWrapper.copyBodyToResponse();
     }
 
+
     private void logRequest(String uuid, ContentCachingRequestWrapper requestWrapper, byte[] requestContent) {
         try {
+            if(isStaticHtmlRequest(requestWrapper.getRequestURI())){
+                log.info("> GET HTML FILE [URI] : {}", requestWrapper.getRequestURI());
+                return;
+            }
             if (requestWrapper.getContentType() != null && requestWrapper.getContentType().contains("application/json")) {
                 JsonNode requestJson = this.objectMapper.readTree(requestContent);
                 log.info("> [UUID] : {} [URI] : {} [RequestJson] : {}", uuid, requestWrapper.getRequestURI(), requestJson);
@@ -58,8 +65,11 @@ public class LoggingFilter extends OncePerRequestFilter {
             log.info("> 로그 비활성화 [RequestURL] : {} [logDisableStatus] : {}", requestWrapper.getRequestURL(), isLogDisable);
             return;
         }
-
         try {
+            if(isStaticHtmlRequest(requestWrapper.getRequestURI())){
+                log.info("> GET HTML FILE [URI] : {}", requestWrapper.getRequestURI());
+                return;
+            }
             if (requestWrapper.getContentType() != null && requestWrapper.getContentType().contains("application/json")) {
                 JsonNode requestJson = this.objectMapper.readTree(requestWrapper.getContentAsByteArray());
                 log.info("> [UUID] : {} [URI] : {} [RequestJson] : {}", uuid, requestWrapper.getRequestURI(), requestJson);
@@ -72,5 +82,9 @@ public class LoggingFilter extends OncePerRequestFilter {
             e.printStackTrace();
         }
     }
+    public boolean isStaticHtmlRequest(String requestURI) {
+        return requestURI.startsWith("/html/");
+    }
+
 
 }
