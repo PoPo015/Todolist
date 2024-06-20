@@ -14,6 +14,7 @@ Todo list
 - **ORM**: JPA 
 
 # 접속 URL
+#### 해당 UI는 모바일 화면에 최적화 되어있습니다.
 - 회원가입 : http://popo015.servehttp.com/html/signup.html
 - 회원탈퇴 : http://popo015.servehttp.com/html/withdraw.html
 - 로그인 : http://popo015.servehttp.com/html/login.html
