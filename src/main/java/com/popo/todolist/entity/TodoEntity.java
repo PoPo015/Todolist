@@ -1,12 +1,15 @@
 package com.popo.todolist.entity;
 
+import com.popo.todolist.common.RootException;
+import com.popo.todolist.common.constants.ResultCodeType;
 import com.popo.todolist.entity.constatns.TodoStatus;
 import com.popo.todolist.model.request.TodoCreateRequestDto;
 import jakarta.persistence.*;
 import lombok.Getter;
-import org.springframework.data.annotation.LastModifiedBy;
 
 import java.time.LocalDateTime;
+
+import static com.popo.todolist.entity.constatns.TodoStatus.*;
 
 @Entity
 @Getter
@@ -56,4 +59,40 @@ public class TodoEntity extends BaseTimeEntity {
         this.description = description;
         this.updateDt = LocalDateTime.now();
     }
+
+    public void validateStateTransition(TodoStatus nextStatus){
+        switch (this.todoStatus) {
+            case TODO:
+                validateTransitionFromTodo(nextStatus);
+                break;
+            case IN_PROGRESS:
+                validateTransitionFromInProgress(nextStatus);
+                break;
+            case PENDING:
+                // PENDING 상태 일경우 어떤 상태로든 변경 가능.
+                break;
+            case DONE:
+                // DONE 상태 일경우 변경 불가.
+                throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+    }
+
+    private void validateTransitionFromTodo(TodoStatus nextStatus) {
+        //  상태에서 가능한 다음 상태는 IN_PROGRESS, DONE, PENDING
+        if (nextStatus == TODO) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+    }
+
+    private void validateTransitionFromInProgress(TodoStatus nextStatus) {
+        if (nextStatus == IN_PROGRESS) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+
+        // IN_PROGRESS 상태에서 변경 가능한 다음 상태는 PENDING, DONE
+        if (!(nextStatus == PENDING || nextStatus == DONE)) {
+            throw new RootException(ResultCodeType.SERVER_ERROR_4S000000);
+        }
+    }
+
 }
