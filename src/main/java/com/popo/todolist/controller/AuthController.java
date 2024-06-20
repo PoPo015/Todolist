@@ -4,6 +4,7 @@ import com.popo.todolist.component.security.CustomUserDetails;
 import com.popo.todolist.model.request.LoginRequestDto;
 import com.popo.todolist.model.request.RefreshRequestDto;
 import com.popo.todolist.model.request.SignupRequestDto;
+import com.popo.todolist.model.request.WithdrawRequestDto;
 import com.popo.todolist.model.response.TokenResponseDto;
 import com.popo.todolist.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +31,8 @@ public class AuthController {
 
     @DeleteMapping("/withdraw")
     public void withdraw(@AuthenticationPrincipal CustomUserDetails customUserDetails,
-                         @RequestParam("password") String password) {
-        authService.withdraw(customUserDetails.getId(), password);
+                         @RequestBody WithdrawRequestDto withdrawRequestDto) {
+        authService.withdraw(customUserDetails.getId(), withdrawRequestDto.getPassword());
     }
 
     @PostMapping("/refresh-token")
@@ -40,6 +41,7 @@ public class AuthController {
         return ResponseEntity.ok(tokens);
     }
 
+    // TODO
 //    회원가입 중복체크. API 필요.
 //    로그아웃 API 필요
 
