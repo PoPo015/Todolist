@@ -15,6 +15,7 @@ Todo list
 
 # 접속 URL
 - 회원가입 : http://popo015.servehttp.com/html/signup.html
+- 회원탈퇴 : http://popo015.servehttp.com/html/withdraw.html
 - 로그인 : http://popo015.servehttp.com/html/login.html
 - TODO : http://popo015.servehttp.com/html/todo.html
 
