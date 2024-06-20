@@ -98,12 +98,14 @@
         <textarea id="description"></textarea>
     </div>
     <button id="addTodo">Add ToDo</button>
+    <h2>Latest ToDo</h2>
+    <ul id="latestTodo" class="todo-list"></ul>
     <h2>ToDos</h2>
     <div class="tabs">
         <div class="tab active" data-status="TODO">TODO</div>
         <div class="tab" data-status="IN_PROGRESS">IN PROGRESS</div>
-        <div class="tab" data-status="DONE">DONE</div>
         <div class="tab" data-status="PENDING">PENDING</div>
+        <div class="tab" data-status="DONE">DONE</div>
     </div>
     <ul id="todoList" class="todo-list"></ul>
 </div>
@@ -114,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addTodoButton = document.getElementById('addTodo');
     const titleInput = document.getElementById('title');
     const descriptionInput = document.getElementById('description');
+    const latestTodoElement = document.getElementById('latestTodo');
     const todoListElement = document.getElementById('todoList');
     const tabs = document.querySelectorAll('.tab');
 
@@ -131,7 +134,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const { latest, todoList, inProgressList, pendingList, doneList } = data.result;
 
             // Clear existing todos
+            latestTodoElement.innerHTML = '';
             todoListElement.innerHTML = '';
+
+            // Display the latest todo
+            if (latest) {
+                const latestItem = document.createElement('li');
+                latestItem.className = 'todo-item';
+                latestItem.innerHTML = `
+                    <span>${latest.title}: ${latest.description}</span>
+                `;
+                latestTodoElement.appendChild(latestItem);
+            }
 
             // Display todos based on current filter
             const categories = {
@@ -144,15 +158,36 @@ document.addEventListener('DOMContentLoaded', () => {
             categories[currentFilter].forEach(todo => {
                 const todoItem = document.createElement('li');
                 todoItem.className = 'todo-item';
+                let actionsHtml = '';
+
+                switch (todo.status) {
+                    case 'TODO':
+                        actionsHtml = `
+                            <button onclick="updateTodoStatus(${todo.id}, 'IN_PROGRESS')">In Progress</button>
+                            <button onclick="updateTodoStatus(${todo.id}, 'DONE')">Done</button>
+                            <button onclick="updateTodoStatus(${todo.id}, 'PENDING')">Pending</button>
+                        `;
+                        break;
+                    case 'IN_PROGRESS':
+                        actionsHtml = `
+                            <button onclick="updateTodoStatus(${todo.id}, 'DONE')">Done</button>
+                            <button onclick="updateTodoStatus(${todo.id}, 'PENDING')">Pending</button>
+                        `;
+                        break;
+                    case 'PENDING':
+                        actionsHtml = `
+                            <button onclick="updateTodoStatus(${todo.id}, 'IN_PROGRESS')">In Progress</button>
+                            <button onclick="updateTodoStatus(${todo.id}, 'DONE')">Done</button>
+                        `;
+                        break;
+                    case 'DONE':
+                        // No actions available for DONE status
+                        break;
+                }
+
                 todoItem.innerHTML = `
                     <span>${todo.title}: ${todo.description}</span>
-                    <div class="todo-actions">
-                        ${currentFilter !== 'DONE' ? `
-                            <button onclick="updateTodoStatus(${todo.id}, 'IN_PROGRESS')">In Progress</button>
-                        ` : ''}
-                        <button onclick="updateTodoStatus(${todo.id}, 'DONE')">Done</button>
-                        <button onclick="deleteTodo(${todo.id})">Delete</button>
-                    </div>
+                    <div class="todo-actions">${actionsHtml}</div>
                 `;
                 todoListElement.appendChild(todoItem);
             });
@@ -208,25 +243,11 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => console.error('Error updating todo status:', error));
     };
 
-    const deleteTodo = (todoId) => {
-        fetch(`/api/todo/${todoId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to delete todo');
-            }
-            fetchTodos(); // Refresh the list after deleting
-        })
-        .catch(error => console.error('Error deleting todo:', error));
-    };
-
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const status = tab.getAttribute('data-status');
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
             filterTodos(status);
         });
     });
@@ -235,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchTodos(); // Load todos on page load
 
     window.updateTodoStatus = updateTodoStatus; // Expose functions to global scope
-    window.deleteTodo = deleteTodo;
 });
 </script>
 
