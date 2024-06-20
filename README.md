@@ -27,3 +27,4 @@ Todo list
 
 
 # ERD
+![스크린샷 2024-06-20 오후 4 36 48](https://github.com/PoPo015/Todolist/assets/62968441/68e032a0-5c63-4e31-8ac6-4fd368576484)
