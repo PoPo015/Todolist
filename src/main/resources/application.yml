@@ -19,5 +19,6 @@ jwt:
   refreshToken_exp_time: 43200 #12시간
   secret: ${JWT_SECRET_KEY}
 
-#server:
-#  port: 17004
+filter:
+  logging:
+    isLogDisable: false  #filter 로그 활성화 or 비활성화
